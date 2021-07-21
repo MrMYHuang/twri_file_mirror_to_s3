@@ -1,11 +1,19 @@
 const lib = require('./dist/fileMirroringToS3');
 
-// For Google Cloud Functions
-exports.gcfHandler = async (req, res) => {
+// For Amazon AWS Lambda.
+exports.handler = async (event) => {
+  let response;
   try {
       await lib.fileMirroringToS3();
-      res.status(200).send('Success!');
+      response = {
+          statusCode: 200,
+          body: JSON.stringify('Success!'),
+      };
   } catch(err) {
-      res.status(400).send(`Error! ${err}`);
+      response = {
+          statusCode: 400,
+          body: JSON.stringify(`Error! ${err}`),
+      };        
   }
+  return response;
 };

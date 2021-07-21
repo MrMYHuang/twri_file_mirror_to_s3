@@ -1,73 +1,22 @@
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
-import * as AdmZip from 'adm-zip';
 import AWS from 'aws-sdk';
-import puppeteer from 'puppeteer';
+import axios from 'axios';
 import params from './params.json';
-const tempDir = `${os.tmpdir()}/twchtemp`;
-const node_xj = require("xls-to-json");
+
+let twrDataUrl = `https://data.wra.gov.tw/Service/OpenData.aspx?format=json&id=50C8256D-30C5-4B8D-9B84-2E14D5C6DF71`;
+let twrWaterDataUrl = `https://data.wra.gov.tw/Service/OpenData.aspx?format=json&id=1602CA19-B224-4CC3-AA31-11B1B124530F`;
 
 const s3bucket = new AWS.S3({
   accessKeyId: params.IAM_USER_KEY,
   secretAccessKey: params.IAM_USER_SECRET
 });
 
-export async function downloadSource() {
-  const timeout = 5 * 60 * 1000;
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox'],
-  });
-  const page = await browser.newPage();
-  if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir);
+export async function downloadSource(url: string) {
+  const res = await axios.get(url, { responseType: 'arraybuffer' });
+  if (res.status == 200) {
+    return res.data;
+  } else {
+    throw `Download source error: ${res.statusText}`;
   }
-  await (page as any)._client.send('Page.setDownloadBehavior', {
-    behavior: 'allow',
-    downloadPath: path.resolve(tempDir),
-  });
-  await page.goto(params.SOURCE_URL);
-  await page.setDefaultNavigationTimeout(timeout);
-  await page.click('#LinkButton1');
-
-  try {
-    await new Promise<void>((ok, fail) => {
-      let downloadDoneChecker = setInterval(() => {
-        const files = fs.readdirSync(tempDir);
-        if (files.some((file: string) => !/.*crdownload$/.test(file))) {
-          clearInterval(downloadDoneChecker);
-          ok();
-        }
-      }, 500);
-    });
-
-    console.log('File download done!');
-    await page.close();
-    await browser.close();
-  } catch (error) {
-    throw `Download source error: ${error}`;
-  }
-}
-
-async function xlsToJson() {
-  const files = fs.readdirSync(tempDir);
-  return new Promise<void>((ok, fail) => {
-    node_xj(
-      {
-        input: `${tempDir}/${files[0]}`, // input xls
-        rowsToSkip: 0, // number of rows to skip at the top of the sheet; defaults to 0
-        allowEmptyKey: false, // avoids empty keys in the output, example: {"": "something"}; default: true
-      },
-      function (err: any, result: any) {
-        if (err) {
-          fail(err);
-        } else {
-          ok(result);
-        }
-      }
-    );
-  });
 }
 
 async function uploadObjectToS3Bucket(objectName: string, objectData: any) {
@@ -91,12 +40,12 @@ async function uploadObjectToS3Bucket(objectName: string, objectData: any) {
 
 export async function fileMirroringToS3() {
   try {
-    await downloadSource();
-    const data = Buffer.from(JSON.stringify(await xlsToJson()));
-    fs.rmSync(path.resolve(tempDir), {recursive: true, force: true});
-    const zip = new AdmZip.default();
-    zip.addFile('a.json', data);
-    await uploadObjectToS3Bucket(params.S3_OBJECT_NAME, zip.toBuffer());
+    const data = await downloadSource(twrDataUrl);
+    await uploadObjectToS3Bucket('twrData.json', data);
+
+    const dataWater = await downloadSource(twrWaterDataUrl);
+    await uploadObjectToS3Bucket('twrDataWater.json', dataWater);
+
     console.log(`File mirroring success!`);
   } catch (err) {
     console.error(`File mirroring failed: ` + err);

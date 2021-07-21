@@ -1,7 +1,5 @@
 {
     "BUCKET_NAME": "",
     "IAM_USER_KEY": "",
-    "IAM_USER_SECRET": "",
-    "SOURCE_URL": "",
-    "S3_OBJECT_NAME": ""
+    "IAM_USER_SECRET": ""
 }
