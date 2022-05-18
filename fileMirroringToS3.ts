@@ -1,13 +1,15 @@
 import AWS from 'aws-sdk';
 import axios from 'axios';
 import params from './params.json';
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
 let twrDataUrl = `https://data.wra.gov.tw/Service/OpenData.aspx?format=json&id=50C8256D-30C5-4B8D-9B84-2E14D5C6DF71`;
 let twrWaterDataUrl = `https://data.wra.gov.tw/Service/OpenData.aspx?format=json&id=1602CA19-B224-4CC3-AA31-11B1B124530F`;
 
 const s3bucket = new AWS.S3({
   accessKeyId: params.IAM_USER_KEY,
-  secretAccessKey: params.IAM_USER_SECRET
+  secretAccessKey: params.IAM_USER_SECRET,
+  sslEnabled: true,
 });
 
 export async function downloadSource(url: string) {
