@@ -1,4 +1,5 @@
 const lib = require('./dist/fileMirroringToS3');
+const pkg = require('./package.json');
 
 // For Amazon AWS Lambda.
 exports.handler = async (event) => {
@@ -7,12 +8,12 @@ exports.handler = async (event) => {
       await lib.fileMirroringToS3();
       response = {
           statusCode: 200,
-          body: JSON.stringify('Success!'),
+          body: JSON.stringify(`App ver ${pkg.version}. Success!`),
       };
   } catch(err) {
       response = {
           statusCode: 400,
-          body: JSON.stringify(`Error! ${err}`),
+          body: JSON.stringify(`App ver ${pkg.version}. Error! ${err}`),
       };        
   }
   return response;
