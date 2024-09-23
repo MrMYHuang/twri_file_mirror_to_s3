@@ -40,12 +40,23 @@ async function uploadObjectToS3Bucket(objectName: string, objectData: any) {
   });
 }
 
+function isJson(buf:ArrayBuffer) {
+  try {
+    JSON.parse((new TextDecoder('utf-8')).decode(buf));
+    return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function fileMirroringToS3() {
   try {
     const data = await downloadSource(twrDataUrl);
+    isJson(data);
     await uploadObjectToS3Bucket('twrData.json', data);
 
     const dataWater = await downloadSource(twrWaterDataUrl);
+    isJson(dataWater);
     await uploadObjectToS3Bucket('twrDataWater.json', dataWater);
 
     console.log(`File mirroring success!`);
