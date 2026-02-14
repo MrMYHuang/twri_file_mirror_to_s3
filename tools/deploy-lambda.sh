@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+rm a.zip
+zip -r a.zip params.json package.json index.js dist node_modules
+
 FUNCTION_NAME="${FUNCTION_NAME:-MirroringTWReservoirDataToS3}"
 REGION="${REGION:-ap-northeast-1}"
 ZIP_PATH="${1:-a.zip}"

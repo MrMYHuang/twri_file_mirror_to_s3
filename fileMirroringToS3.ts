@@ -6,8 +6,10 @@ import type {DailyOperationalStatisticsOfReservoir, ReservoirConditionData} from
 import params from './params.json';
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
-export const twrDataUrl = `https://opendata.wra.gov.tw/api/v2/51023e88-4c76-4dbc-bbb9-470da690d539?sort=_importdate%20asc&format=JSON`;
+// ReservoirConditionData
 export const twrWaterDataUrl = `https://opendata.wra.gov.tw/api/v2/2be9044c-6e44-4856-aad5-dd108c2e6679?sort=_importdate%20asc&format=JSON`;
+// DailyOperationalStatistics
+export const twrDataUrl = `https://opendata.wra.gov.tw/api/v2/51023e88-4c76-4dbc-bbb9-470da690d539?sort=_importdate%20asc&format=JSON`;
 
 const s3bucket = new AWS.S3({
   accessKeyId: params.IAM_USER_KEY,
@@ -123,38 +125,35 @@ function validateFirstElementShapeOrThrow(
 
 function mapToReservoirConditionData(item: Record<string, unknown>): ReservoirConditionData {
   return {
-    accumulaterainfallincatchment: item.accumulaterainfallincatchment as number,
-    desiltingtunneloutflow: item.desiltingtunneloutflow as number,
-    drainagetunneloutflow: item.drainagetunneloutflow as number,
-    effectivewaterstoragecapacity: item.effectivewaterstoragecapacity as number,
-    inflowdischarge: item.inflowdischarge as number,
+    accumulaterainfallincatchment: Number(item.accumulaterainfallincatchment as string),
+    desiltingtunneloutflow: Number(item.desiltingtunneloutflow as string),
+    drainagetunneloutflow: Number(item.drainagetunneloutflow as string),
+    effectivewaterstoragecapacity: Number(item.effectivewaterstoragecapacity as string),
+    inflowdischarge: Number(item.inflowdischarge as string),
     observationtime: item.observationtime as string,
-    othersoutflow: item.othersoutflow as number,
-    poweroutletoutflow: item.poweroutletoutflow as number,
-    predeterminedcrossflow: item.predeterminedcrossflow as number,
+    othersoutflow: Number(item.othersoutflow as string),
+    poweroutletoutflow: Number(item.poweroutletoutflow as string),
+    predeterminedcrossflow: Number(item.predeterminedcrossflow as string),
     predeterminedoutflowtime: item.predeterminedoutflowtime as string,
-    reservoiridentifier: item.reservoiridentifier as number,
-    spillwayoutflow: item.spillwayoutflow as number,
-    statustype: item.statustype as number,
-    totaloutflow: item.totaloutflow as number,
-    waterdraw: item.waterdraw as number,
-    waterlevel: item.waterlevel as number,
+    reservoiridentifier: Number(item.reservoiridentifier as string),
+    spillwayoutflow: Number(item.spillwayoutflow as string),
+    statustype: Number(item.statustype as string),
+    totaloutflow: Number(item.totaloutflow as string),
+    waterdraw: Number(item.waterdraw as string),
+    waterlevel: Number(item.waterlevel as string),
   };
 }
 
 function mapToDailyOperationalStatistics(item: Record<string, unknown>): DailyOperationalStatisticsOfReservoir {
   return {
-    crossflow: item.crossflow as number,
-    capacity: item.capacity as number,
-    outflow: item.outflow as number,
-    outflowdischarge: item.outflowdischarge as number,
-    outflowtotal: item.outflowtotal as number,
-    regulatorydischarge: item.regulatorydischarge as number,
+    crossflow: Number(item.crossflow as string),
+    capacity: Number(item.capacity as string),
+    outflow: Number(item.outflow as string),
+    outflowdischarge: Number(item.outflowdischarge as string),
+    outflowtotal: Number(item.outflowtotal as string),
+    regulatorydischarge: Number(item.regulatorydischarge as string),
     reservoiridentifier: item.reservoiridentifier as string,
     reservoirname: item.reservoirname as string,
-    latestwaterdata: item.latestwaterdata
-      ? mapToReservoirConditionData(item.latestwaterdata as Record<string, unknown>)
-      : undefined,
     basinrainfall: item.basinrainfall as string,
     datetime: item.datetime as string,
     dwl: item.dwl as string,

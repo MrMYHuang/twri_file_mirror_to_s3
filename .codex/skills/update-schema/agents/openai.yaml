@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Schema"
+  short_description: "Sync source schemas and mappers"
+  default_prompt: "Use $update-schema to refresh SourceDataModel.ts schemas and mapper functions from current TWRI API payloads."
