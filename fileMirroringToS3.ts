@@ -77,11 +77,11 @@ function decodeJsonOrThrow(buf: ArrayBuffer, dataName: string): unknown {
 }
 
 const ajv = new Ajv({ allErrors: true, strict: false });
-const validateFirstDailyOperationalStatistics = ajv.compile({
+export const validateFirstDailyOperationalStatistics = ajv.compile({
   ...SourceDailyOperationalStatisticsOfReservoirSchema,
   additionalProperties: false
 });
-const validateFirstReservoirConditionData = ajv.compile({
+export const validateFirstReservoirConditionData = ajv.compile({
   ...SourceReservoirConditionDataSchema,
   additionalProperties: false
 });

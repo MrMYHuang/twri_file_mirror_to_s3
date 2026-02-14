@@ -2,37 +2,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Ajv = require('ajv');
 const {
-  DailyOperationalStatisticsOfReservoirSchema,
-  ReservoirConditionDataSchema
-} = require('twri-data');
-
-const { downloadAndValidateSource, twrDataUrl, twrWaterDataUrl } = require('./fileMirroringToS3');
-
-function createDailyValidator() {
-  const ajv = new Ajv({ allErrors: true, strict: false });
-  const requiredFields = Array.isArray(DailyOperationalStatisticsOfReservoirSchema.required)
-    ? DailyOperationalStatisticsOfReservoirSchema.required
-    : [];
-  return ajv.compile({
-    type: 'object',
-    required: requiredFields,
-    additionalProperties: true,
-    properties: {}
-  });
-}
-
-function createWaterValidator() {
-  const ajv = new Ajv({ allErrors: true, strict: false });
-  const requiredFields = Array.isArray(ReservoirConditionDataSchema.required)
-    ? ReservoirConditionDataSchema.required
-    : [];
-  return ajv.compile({
-    type: 'object',
-    required: requiredFields,
-    additionalProperties: true,
-    properties: {}
-  });
-}
+  downloadAndValidateSource,
+  twrDataUrl,
+  twrWaterDataUrl,
+  validateFirstDailyOperationalStatistics,
+  validateFirstReservoirConditionData
+} = require('./fileMirroringToS3');
 
 function createAlwaysMissingFieldValidator(fieldName: string) {
   const ajv = new Ajv({ allErrors: true, strict: false });
@@ -45,7 +20,7 @@ function createAlwaysMissingFieldValidator(fieldName: string) {
 }
 
 test('downloadAndValidateSource(Data) succeeds using twrDataUrl', async () => {
-  const data = await downloadAndValidateSource(twrDataUrl, createDailyValidator(), 'Data');
+  const data = await downloadAndValidateSource(twrDataUrl, validateFirstDailyOperationalStatistics, 'Data');
 });
 
 test('downloadAndValidateSource(Data) throws mismatch for forced missing field', async () => {
@@ -56,7 +31,7 @@ test('downloadAndValidateSource(Data) throws mismatch for forced missing field',
 });
 
 test('downloadAndValidateSource(DataWater) succeeds using twrWaterDataUrl', async () => {
-  const data = await downloadAndValidateSource(twrWaterDataUrl, createWaterValidator(), 'DataWater');
+  const data = await downloadAndValidateSource(twrWaterDataUrl, validateFirstReservoirConditionData, 'DataWater');
 });
 
 test('downloadAndValidateSource(DataWater) throws mismatch for forced missing field', async () => {
