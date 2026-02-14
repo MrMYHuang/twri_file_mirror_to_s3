@@ -1,13 +1,14 @@
 {
   "name": "twri_file_mirror_to_s3",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "pack": "zip -r a.zip params.json package.json index.js dist node_modules",
     "start": "node index.js",
-    "test": "npm run build && node dist/test.js"
+    "test": "node dist/test.js",
+    "pack": "rm a.zip && zip -r a.zip params.json package.json index.js dist node_modules",
+    "deploy": "./tools/deploy-lambda.sh a.zip"
   },
   "author": "",
   "license": "ISC",
