@@ -3,6 +3,10 @@ name: update-schema
 description: Update TWRI source schemas and mapping functions from live API payloads. Use when SourceDataModel.ts and fileMirroringToS3.ts must be synchronized with current fields from twrWaterDataUrl and twrDataUrl.
 ---
 
+# Rules
+1. Allow to edit files.
+2. Deny committing any change to git repo.
+
 # Update Schema
 
 Execute this workflow exactly in order.

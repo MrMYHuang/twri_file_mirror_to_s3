@@ -1,8 +1,16 @@
 import AWS from 'aws-sdk';
 import Ajv, {ErrorObject} from 'ajv';
 import axios from 'axios';
-import {SourceDailyOperationalStatisticsOfReservoirSchema, SourceReservoirConditionDataSchema} from './SourceDataModel';
-import type {DailyOperationalStatisticsOfReservoir, ReservoirConditionData} from 'twri-data';
+import {
+  SourceDailyOperationalStatisticsOfReservoirSchema,
+  SourceReservoirConditionDataSchema,
+  mapToDailyOperationalStatistics,
+  mapToReservoirConditionData
+} from './SourceDataModels';
+import type {
+  SourceDailyOperationalStatisticsOfReservoir,
+  SourceReservoirConditionData
+} from './SourceDataModels';
 import params from './params.json';
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
@@ -17,44 +25,51 @@ const s3bucket = new AWS.S3({
   sslEnabled: true,
 });
 
+export enum SourceDataName {
+  Data = 'Data',
+  DataWater = 'DataWater',
+}
+
 export async function fileMirroringToS3() {
   try {
     const data = await downloadAndValidateSource(
       twrDataUrl,
       validateFirstDailyOperationalStatistics,
-      'Data'
+      SourceDataName.Data
     );
     await uploadObjectToS3Bucket('twrData.json', data);
 
     const dataWater = await downloadAndValidateSource(
       twrWaterDataUrl,
       validateFirstReservoirConditionData,
-      'DataWater'
+      SourceDataName.DataWater
     );
     await uploadObjectToS3Bucket('twrDataWater.json', dataWater);
 
     console.log(`File mirroring success!`);
   } catch (err) {
-    console.error(`File mirroring failed: ` + err);
+    const msg = `File mirroring failed: ` + err;
+    console.error(msg);
+    throw new Error(msg);    
   }
 }
 
 export async function downloadAndValidateSource(
   url: string,
   validate: ReturnType<Ajv['compile']>,
-  dataName: string
+  dataName: SourceDataName
 ) {
   const data = await downloadSource(url);
   const decodedData = decodeJsonOrThrow(data, dataName);
-  validateFirstElementShapeOrThrow(decodedData, validate, dataName);
+  await validateFirstElementShapeOrThrow(decodedData, validate, dataName);
 
-  if (dataName === 'Data') {
-    const mapped = (decodedData as Record<string, unknown>[]).map(mapToDailyOperationalStatistics);
+  if (dataName === SourceDataName.Data) {
+    const mapped = (decodedData as SourceDailyOperationalStatisticsOfReservoir[]).map(mapToDailyOperationalStatistics);
     return Buffer.from(JSON.stringify(mapped), 'utf-8');
   }
 
-  if (dataName === 'DataWater') {
-    const mapped = (decodedData as Record<string, unknown>[]).map(mapToReservoirConditionData);
+  if (dataName === SourceDataName.DataWater) {
+    const mapped = (decodedData as SourceReservoirConditionData[]).map(mapToReservoirConditionData);
     return Buffer.from(JSON.stringify(mapped), 'utf-8');
   }
 
@@ -70,7 +85,7 @@ export async function downloadSource(url: string) {
   }
 }
 
-function decodeJsonOrThrow(buf: ArrayBuffer, dataName: string): unknown {
+function decodeJsonOrThrow(buf: ArrayBuffer, dataName: SourceDataName): unknown {
   try {
     return JSON.parse((new TextDecoder('utf-8')).decode(buf));
   } catch (error) {
@@ -79,19 +94,17 @@ function decodeJsonOrThrow(buf: ArrayBuffer, dataName: string): unknown {
 }
 
 const ajv = new Ajv({ allErrors: true, strict: false });
-export const validateFirstDailyOperationalStatistics = ajv.compile({
-  ...SourceDailyOperationalStatisticsOfReservoirSchema,
-  additionalProperties: false
-});
-export const validateFirstReservoirConditionData = ajv.compile({
-  ...SourceReservoirConditionDataSchema,
-  additionalProperties: false
-});
+export const validateFirstDailyOperationalStatistics = ajv.compile<SourceDailyOperationalStatisticsOfReservoir>(
+  SourceDailyOperationalStatisticsOfReservoirSchema
+);
+export const validateFirstReservoirConditionData = ajv.compile<SourceReservoirConditionData>(
+  SourceReservoirConditionDataSchema
+);
 
-function validateFirstElementShapeOrThrow(
+async function validateFirstElementShapeOrThrow(
   data: unknown,
   validate: ReturnType<Ajv['compile']>,
-  dataName: string
+  dataName: SourceDataName
 ) {
   if (!Array.isArray(data)) {
     throw new Error(`${dataName} validation failed: expected a JSON array`);
@@ -109,6 +122,7 @@ function validateFirstElementShapeOrThrow(
   const isValid = validate(first);
   if (!isValid) {
     const errors = (validate.errors ?? []) as ErrorObject[];
+    await dispatchWorkflowOnValidationError(dataName, ajv.errorsText(errors));
     for (const error of errors) {
       if (error.keyword === 'required') {
         const missingField = (error.params as { missingProperty: string }).missingProperty;
@@ -123,43 +137,40 @@ function validateFirstElementShapeOrThrow(
   }
 }
 
-function mapToReservoirConditionData(item: Record<string, unknown>): ReservoirConditionData {
-  return {
-    accumulaterainfallincatchment: Number(item.accumulaterainfallincatchment as string),
-    desiltingtunneloutflow: Number(item.desiltingtunneloutflow as string),
-    drainagetunneloutflow: Number(item.drainagetunneloutflow as string),
-    effectivewaterstoragecapacity: Number(item.effectivewaterstoragecapacity as string),
-    inflowdischarge: Number(item.inflowdischarge as string),
-    observationtime: item.observationtime as string,
-    othersoutflow: Number(item.othersoutflow as string),
-    poweroutletoutflow: Number(item.poweroutletoutflow as string),
-    predeterminedcrossflow: Number(item.predeterminedcrossflow as string),
-    predeterminedoutflowtime: item.predeterminedoutflowtime as string,
-    reservoiridentifier: Number(item.reservoiridentifier as string),
-    spillwayoutflow: Number(item.spillwayoutflow as string),
-    statustype: Number(item.statustype as string),
-    totaloutflow: Number(item.totaloutflow as string),
-    waterdraw: Number(item.waterdraw as string),
-    waterlevel: Number(item.waterlevel as string),
-  };
-}
+async function dispatchWorkflowOnValidationError(name: SourceDataName, errorText?: string) {
+  const token = params.GITHUB_TOKEN;
+  const owner = params.GITHUB_OWNER;
+  const repo = params.GITHUB_REPO;
+  const workflowFile = params.GITHUB_WORKFLOW_FILE;
+  const ref = "main";
 
-function mapToDailyOperationalStatistics(item: Record<string, unknown>): DailyOperationalStatisticsOfReservoir {
-  return {
-    crossflow: Number(item.crossflow as string),
-    capacity: Number(item.capacity as string),
-    outflow: Number(item.outflow as string),
-    outflowdischarge: Number(item.outflowdischarge as string),
-    outflowtotal: Number(item.outflowtotal as string),
-    regulatorydischarge: Number(item.regulatorydischarge as string),
-    reservoiridentifier: item.reservoiridentifier as string,
-    reservoirname: item.reservoirname as string,
-    basinrainfall: item.basinrainfall as string,
-    datetime: item.datetime as string,
-    dwl: item.dwl as string,
-    inflow: item.inflow as string,
-    nwlmax: item.nwlmax as string,
-  };
+  if (!token || !owner || !repo || !workflowFile) {
+    console.warn(
+      "Skipping workflow dispatch. Required params: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_WORKFLOW_FILE.",
+    );
+    return;
+  }
+
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFile}/dispatches`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ref,
+        inputs: {
+        },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    console.warn(`Workflow dispatch failed with ${response.status}: ${body}`);
+  }
 }
 
 async function uploadObjectToS3Bucket(objectName: string, objectData: any) {
