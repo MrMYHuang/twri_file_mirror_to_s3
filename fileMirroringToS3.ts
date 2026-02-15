@@ -7,11 +7,11 @@ import {
   SourceReservoirConditionDataSchema,
   mapToDailyOperationalStatistics,
   mapToReservoirConditionData
-} from './SourceDataModels.js';
+} from './SourceModels.js';
 import type {
   SourceDailyOperationalStatisticsOfReservoir,
   SourceReservoirConditionData
-} from './SourceDataModels.js';
+} from './SourceModels.js';
 import params from './params.json' with {type: 'json'};
 const Ajv = AjvModule.default;
 const axios = axiosModule.default;
