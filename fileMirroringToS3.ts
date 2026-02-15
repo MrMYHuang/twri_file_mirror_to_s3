@@ -1,17 +1,20 @@
 import AWS from 'aws-sdk';
-import Ajv, {ErrorObject} from 'ajv';
-import axios from 'axios';
+import AjvModule from 'ajv';
+import axiosModule from 'axios';
+import type {ErrorObject, ValidateFunction} from 'ajv';
 import {
   SourceDailyOperationalStatisticsOfReservoirSchema,
   SourceReservoirConditionDataSchema,
   mapToDailyOperationalStatistics,
   mapToReservoirConditionData
-} from './SourceDataModels';
+} from './SourceDataModels.js';
 import type {
   SourceDailyOperationalStatisticsOfReservoir,
   SourceReservoirConditionData
-} from './SourceDataModels';
-import params from './params.json';
+} from './SourceDataModels.js';
+import params from './params.json' with {type: 'json'};
+const Ajv = AjvModule.default;
+const axios = axiosModule.default;
 process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
 
 // ReservoirConditionData
@@ -56,7 +59,7 @@ export async function fileMirroringToS3() {
 
 export async function downloadAndValidateSource(
   url: string,
-  validate: ReturnType<Ajv['compile']>,
+  validate: ValidateFunction,
   dataName: SourceDataName
 ) {
   const data = await downloadSource(url);
@@ -103,7 +106,7 @@ export const validateFirstReservoirConditionData = ajv.compile<SourceReservoirCo
 
 async function validateFirstElementShapeOrThrow(
   data: unknown,
-  validate: ReturnType<Ajv['compile']>,
+  validate: ValidateFunction,
   dataName: SourceDataName
 ) {
   if (!Array.isArray(data)) {

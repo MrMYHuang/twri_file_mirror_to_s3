@@ -1,5 +1,9 @@
 {
     "BUCKET_NAME": "",
     "IAM_USER_KEY": "",
-    "IAM_USER_SECRET": ""
+    "IAM_USER_SECRET": "",
+    "GITHUB_TOKEN": "",
+    "GITHUB_OWNER": "MrMYHuang",
+    "GITHUB_REPO":"twri_file_mirror_to_s3",
+    "GITHUB_WORKFLOW_FILE":"update-schema.yml"
 }

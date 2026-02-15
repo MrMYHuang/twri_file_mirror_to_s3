@@ -1,11 +1,11 @@
-const lib = require('./dist/fileMirroringToS3');
-const pkg = require('./package.json');
+import {fileMirroringToS3} from './dist/fileMirroringToS3.js';
+import pkg from './package.json' assert {type: 'json'};
 
 // For Amazon AWS Lambda.
-exports.handler = async (event) => {
+export const handler = async (event) => {
   let response;
   try {
-      await lib.fileMirroringToS3();
+      await fileMirroringToS3();
       response = {
           statusCode: 200,
           body: JSON.stringify(`App ver ${pkg.version}. Success!`),

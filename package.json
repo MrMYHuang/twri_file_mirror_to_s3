@@ -2,6 +2,7 @@
   "name": "twri_file_mirror_to_s3",
   "version": "1.0.8",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
@@ -20,6 +21,6 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@types/node": "^17.0.34"
+    "@types/node": "^22.19.11"
   }
 }
