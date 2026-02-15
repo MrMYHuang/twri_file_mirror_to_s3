@@ -1,5 +1,5 @@
 import {fileMirroringToS3} from './dist/fileMirroringToS3.js';
-import pkg from './package.json' assert {type: 'json'};
+import pkg from './package.json' with {type: 'json'};
 
 // For Amazon AWS Lambda.
 export const handler = async (event) => {
