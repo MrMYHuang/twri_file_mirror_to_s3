@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-rm a.zip
+rm -f a.zip
 zip -r a.zip params.json package.json index.js dist node_modules
 
 FUNCTION_NAME="${FUNCTION_NAME:-MirroringTWReservoirDataToS3}"
