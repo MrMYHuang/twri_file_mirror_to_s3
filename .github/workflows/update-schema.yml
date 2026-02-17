@@ -30,8 +30,11 @@ jobs:
 
       - name: Run Copilot
         env:
+          PARAMS_JSON: ${{ secrets.PARAMS_JSON }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: copilot -p "/update-schemas" --yolo --model gpt-5-mini
+        run: |
+          echo $PARAMS_JSON > params.json
+          copilot -p "/update-schemas" --yolo --model gpt-5-mini
 
       - name: Check SourceModels.ts changes
         id: source_models_changes
@@ -51,13 +54,11 @@ jobs:
       - name: Commit SourceModels.ts
         if: steps.source_models_changes.outputs.changed == 'true'
         env:
-          PARAMS_JSON: ${{ secrets.PARAMS_JSON }}
           GITHUB_TOKEN: ${{ github.token }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           chmod +x ./scripts/deploy-lambda.sh
-          echo $PARAMS_JSON > params.json
           npm version patch --no-git-tag-version
           npm i
           npm run build

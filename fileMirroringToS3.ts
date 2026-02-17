@@ -55,7 +55,6 @@ export async function fileMirroringToS3() {
   } catch (err) {
     const msg = `File mirroring failed: ` + err;
     console.error(msg);
-    throw new Error(msg);    
   }
 }
 
