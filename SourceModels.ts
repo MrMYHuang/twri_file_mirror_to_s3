@@ -2,7 +2,7 @@ import type {DailyOperationalStatisticsOfReservoir, ReservoirConditionData} from
 import {Type, Static} from 'typebox';
 
 export const SourceReservoirConditionDataSchema = Type.Object({
-  accumulaterainfallincatchment1: Type.String(),
+  accumulaterainfallincatchment: Type.String(),
   desiltingtunneloutflow: Type.String(),
   drainagetunneloutflow: Type.String(),
   effectivewaterstoragecapacity: Type.String(),
@@ -26,7 +26,7 @@ export interface SourceReservoirConditionData extends Static<typeof SourceReserv
 
 export function mapToReservoirConditionData(item: SourceReservoirConditionData): ReservoirConditionData {
   return {
-    accumulaterainfallincatchment: Number(item.accumulaterainfallincatchment1 as string),
+    accumulaterainfallincatchment: Number(item.accumulaterainfallincatchment as string),
     desiltingtunneloutflow: Number(item.desiltingtunneloutflow as string),
     drainagetunneloutflow: Number(item.drainagetunneloutflow as string),
     effectivewaterstoragecapacity: Number(item.effectivewaterstoragecapacity as string),
