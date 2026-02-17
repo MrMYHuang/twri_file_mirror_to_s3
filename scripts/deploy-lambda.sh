@@ -2,11 +2,8 @@
 
 set -euo pipefail
 
-rm -f a.zip
-zip -r a.zip params.json package.json index.js dist node_modules
-
 FUNCTION_NAME="${FUNCTION_NAME:-MirroringTWReservoirDataToS3}"
-REGION="${REGION:-ap-northeast-1}"
+REGION="${REGION:-ap-east-2}"
 ZIP_PATH="${1:-a.zip}"
 
 if ! command -v aws >/dev/null 2>&1; then

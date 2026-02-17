@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import {PutObjectCommand, S3Client, GetBucketLocationCommand} from '@aws-sdk/client-s3';
 import AjvModule from 'ajv';
 import axiosModule from 'axios';
 import type {ErrorObject, ValidateFunction} from 'ajv';
@@ -22,10 +22,12 @@ export const twrWaterDataUrl = `https://opendata.wra.gov.tw/api/v2/2be9044c-6e44
 // DailyOperationalStatistics
 export const twrDataUrl = `https://opendata.wra.gov.tw/api/v2/51023e88-4c76-4dbc-bbb9-470da690d539?sort=_importdate%20asc&format=JSON`;
 
-const s3bucket = new AWS.S3({
-  accessKeyId: params.IAM_USER_KEY,
-  secretAccessKey: params.IAM_USER_SECRET,
-  sslEnabled: true,
+const s3Client = new S3Client({
+  region: "ap-east-2",
+  credentials: {
+    accessKeyId: params.IAM_USER_KEY,
+    secretAccessKey: params.IAM_USER_SECRET
+  }
 });
 
 export enum SourceDataName {
@@ -177,20 +179,33 @@ async function dispatchWorkflowOnValidationError(name: SourceDataName, errorText
 }
 
 async function uploadObjectToS3Bucket(objectName: string, objectData: any) {
-  return new Promise<void>((ok, fail) => {
-    const s3params: AWS.S3.PutObjectRequest = {
-      Bucket: params.BUCKET_NAME,
-      Key: objectName,
-      Body: objectData,
-      ACL: 'public-read'
-    };
-    s3bucket.upload(s3params, function (err: Error, data: { Location: any; }) {
-      if (err) {
-        fail(err);
-        return;
-      }
+  const s3client = await getS3BucketClient();
+  await s3client.send(new PutObjectCommand({
+    Bucket: params.BUCKET_NAME,
+    Key: objectName,
+    Body: objectData,
+  }));
+}
 
-      ok();
-    });
+async function getS3BucketClient() {
+  const location = await s3Client.send(new GetBucketLocationCommand({Bucket: params.BUCKET_NAME}));
+  const bucketRegion = normalizeBucketRegion(location.LocationConstraint as unknown as string);
+
+  return new S3Client({
+    region: bucketRegion,
+    credentials: {
+      accessKeyId: params.IAM_USER_KEY,
+      secretAccessKey: params.IAM_USER_SECRET,
+    },
   });
+}
+
+function normalizeBucketRegion(locationConstraint?: string) {
+  if (!locationConstraint) {
+    return 'us-east-1';
+  }
+  if (locationConstraint === 'EU') {
+    return 'eu-west-1';
+  }
+  return locationConstraint;
 }

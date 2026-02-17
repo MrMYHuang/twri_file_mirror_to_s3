@@ -8,11 +8,13 @@
     "build": "tsc",
     "start": "node index.js",
     "test": "node dist/test.js",
-    "deploy": "./scripts/deploy-lambda.sh a.zip"
+    "pack": "rm -f a.zip && zip -r a.zip params.json package.json index.js dist node_modules",
+    "deploy": "npm run pack && ./scripts/deploy-lambda.sh a.zip"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.991.0",
     "ajv": "^8.17.1",
     "aws-sdk": "^2.929.0",
     "axios": "^0.21.1",

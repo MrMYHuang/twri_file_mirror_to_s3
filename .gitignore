@@ -3,3 +3,6 @@ dist
 a.zip
 .DS_Store
 params.json
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform/providers/registry.terraform.io/hashicorp/
