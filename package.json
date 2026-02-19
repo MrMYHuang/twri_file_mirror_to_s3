@@ -1,6 +1,6 @@
 {
   "name": "twri_file_mirror_to_s3",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "",
   "type": "module",
   "main": "index.js",
