@@ -40,6 +40,7 @@ jobs:
         id: source_models_changes
         run: |
           if git diff --quiet -- SourceModels.ts; then
+            git diff --no-pager
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
