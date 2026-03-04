@@ -174,6 +174,8 @@ async function dispatchWorkflowOnValidationError(name: SourceDataName, errorText
   if (!response.ok) {
     const body = await response.text();
     console.warn(`Workflow dispatch failed with ${response.status}: ${body}`);
+  } else {
+    console.log("Workflow dispatch succeeded.");
   }
 }
 
