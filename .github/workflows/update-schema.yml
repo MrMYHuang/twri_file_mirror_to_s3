@@ -2,6 +2,11 @@ name: Update Schema
 
 on:
   workflow_dispatch:
+    inputs:
+      uuid:
+        description: 'Unique identifier for this dispatch'
+        required: false
+        type: string
 
 jobs:
   update-schema:
@@ -12,6 +17,9 @@ jobs:
       pull-requests: write
 
     steps:
+      - name: Log workflow_dispatch inputs
+        run: echo '${{ toJson(github.event.inputs) }}'
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
