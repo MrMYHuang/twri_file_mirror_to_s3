@@ -1,0 +1,82 @@
+name: Update Schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      uuid:
+        description: 'Unique identifier for this dispatch'
+        required: false
+        type: string
+
+jobs:
+  update-schema:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Log workflow_dispatch inputs
+        run: echo '${{ toJson(github.event.inputs) }}'
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Branch
+        run: git checkout -b dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install GitHub Copilot CLI
+        run: npm i -g @github/copilot
+
+      - name: Run Copilot
+        env:
+          PARAMS_JSON: ${{ secrets.PARAMS_JSON }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo $PARAMS_JSON > params.json
+          copilot -p "/update-schemas" --yolo --model gpt-5-mini
+
+      - name: Check SourceModels.ts changes
+        id: source_models_changes
+        run: |
+          if git diff --quiet -- SourceModels.ts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git --no-pager diff
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.source_models_changes.outputs.changed == 'true'
+        with:
+          role-to-assume: arn:aws:iam::513539428904:role/github-lambda
+          aws-region: ap-east-2
+
+      - name: Commit SourceModels.ts
+        if: steps.source_models_changes.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          chmod +x ./scripts/deploy-lambda.sh
+          npm version patch --no-git-tag-version
+          npm i
+          npm run build
+          npm run deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "myh@live.com"
+          git add .
+          git commit -m "update schema"
+          git push origin dev
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="SourceModels.ts updated and pushed from workflow ${GITHUB_WORKFLOW} in ${GITHUB_REPOSITORY} (${GITHUB_SHA})."

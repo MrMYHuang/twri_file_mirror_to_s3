@@ -130,14 +130,14 @@ async function validateFirstElementShapeOrThrow(
     for (const error of errors) {
       if (error.keyword === 'required') {
         const missingField = (error.params as { missingProperty: string }).missingProperty;
-        throw new Error(`${dataName} validation failed: mismatch field '${missingField}' (missing). Original data: ${JSON.stringify(first)}`);
+        throw new Error(`${dataName} validation failed: mismatch field '${missingField}' (missing). Original data: ${JSON.stringify(data)}`);
       }
       if (error.keyword === 'additionalProperties') {
         const unexpectedField = (error.params as { additionalProperty: string }).additionalProperty;
-        throw new Error(`${dataName} validation failed: mismatch field '${unexpectedField}' (unexpected). Original data: ${JSON.stringify(first)}`);
+        throw new Error(`${dataName} validation failed: mismatch field '${unexpectedField}' (unexpected). Original data: ${JSON.stringify(data)}`);
       }
     }
-    throw new Error(`${dataName} validation failed: ${ajv.errorsText(errors)}. Original data: ${JSON.stringify(first)}`);
+    throw new Error(`${dataName} validation failed: ${ajv.errorsText(errors)}. Original data: ${JSON.stringify(data)}`);
   }
 }
 
